@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Restaurant Management System - Streamlit Cloud Compatible
-QR Menu Software + Carbon Footprint Calculator
-OCR functionality disabled for Streamlit Cloud compatibility
+Complete Restaurant Management System - Full OCR Version
+QR Menu Software + Carbon Footprint Calculator + OCR Menu Reader
+Optimized for Google Cloud Run deployment
 """
 
 import streamlit as st
@@ -14,6 +14,18 @@ from io import BytesIO
 import base64
 import uuid
 from typing import Dict, List, Tuple
+import re
+
+# OCR imports with error handling
+try:
+    from PIL import Image
+    import pytesseract
+    import cv2
+    import numpy as np
+    OCR_AVAILABLE = True
+except ImportError as e:
+    OCR_AVAILABLE = False
+    OCR_ERROR = str(e)
 
 # Page config - must be first
 st.set_page_config(
@@ -21,9 +33,6 @@ st.set_page_config(
     page_icon="🍽️",
     layout="wide"
 )
-
-# OCR is disabled for Streamlit Cloud compatibility
-OCR_AVAILABLE = False
 
 
 class AdminConfig:
@@ -68,6 +77,126 @@ class AdminConfig:
         }
 
 
+class MenuOCRProcessor:
+    def __init__(self):
+        self.common_food_words = [
+            'pizza', 'burger', 'pasta', 'salad', 'chicken', 'beef', 'fish', 'soup',
+            'sandwich', 'wrap', 'steak', 'rice', 'noodles', 'bread', 'cheese',
+            'tomato', 'onion', 'garlic', 'pepper', 'sauce', 'cream', 'butter',
+            'oil', 'wine', 'beer', 'coffee', 'tea', 'juice', 'water', 'meat',
+            'vegetable', 'fruit', 'potato', 'lettuce', 'mushroom', 'egg', 'lamb',
+            'pork', 'turkey', 'bacon', 'ham', 'salmon', 'tuna', 'shrimp', 'crab',
+            'dessert', 'chocolate', 'vanilla', 'strawberry', 'apple', 'banana'
+        ]
+        
+    def preprocess_image(self, image: Image.Image) -> np.ndarray:
+        """Preprocess image for better OCR results"""
+        try:
+            # Convert PIL image to OpenCV format
+            opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            
+            # Convert to grayscale
+            gray = cv2.cvtColor(opencv_image, cv2.COLOR_BGR2GRAY)
+            
+            # Apply noise reduction
+            denoised = cv2.fastNlMeansDenoising(gray)
+            
+            # Apply adaptive thresholding for better text recognition
+            thresh = cv2.adaptiveThreshold(
+                denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+            )
+            
+            return thresh
+        except Exception as e:
+            st.error(f"Image preprocessing error: {str(e)}")
+            return np.array(image.convert('L'))
+
+    def extract_text_from_image(self, image: Image.Image) -> str:
+        """Extract text from menu image using OCR"""
+        if not OCR_AVAILABLE:
+            st.error("OCR functionality is not available. Please check dependencies.")
+            return ""
+            
+        try:
+            # Preprocess image for better OCR
+            processed_image = self.preprocess_image(image)
+            
+            # Configure tesseract for better results
+            custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?-()[]₺$€£ '
+            
+            # Extract text using tesseract
+            text = pytesseract.image_to_string(processed_image, config=custom_config)
+            
+            return text
+        except Exception as e:
+            st.error(f"OCR Error: {str(e)}. Please ensure Tesseract is properly installed.")
+            return ""
+
+    def parse_menu_items(self, text: str) -> List[Dict]:
+        """Parse extracted text to identify menu items and prices"""
+        items = []
+        lines = text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line or len(line) < 3:
+                continue
+                
+            # Look for price patterns (various currencies)
+            price_pattern = r'[\₺\$\€\£]?\s*\d+[\.,]?\d*\s*[\₺\$\€\£]?'
+            price_matches = re.findall(price_pattern, line)
+            
+            # Extract potential item name (remove price from line)
+            item_text = re.sub(price_pattern, '', line).strip()
+            item_text = re.sub(r'\s+', ' ', item_text)  # Clean multiple spaces
+            
+            # Filter based on length and food-related content
+            if len(item_text) > 3 and len(item_text) < 100:
+                # Calculate food-related score
+                food_score = sum(1 for word in self.common_food_words 
+                               if word.lower() in item_text.lower())
+                
+                # Only process if it contains food-related words
+                if food_score > 0:
+                    # Extract and parse price
+                    price = 0.0
+                    if price_matches:
+                        price_str = price_matches[-1]
+                        # Remove currency symbols and extract number
+                        price_num = re.sub(r'[^\d\.,]', '', price_str)
+                        try:
+                            price = float(price_num.replace(',', '.'))
+                        except:
+                            price = 0.0
+                    
+                    # Identify ingredients from the text
+                    ingredients = []
+                    for word in self.common_food_words:
+                        if word.lower() in item_text.lower() and word not in ingredients:
+                            ingredients.append(word)
+                    
+                    # Calculate confidence score
+                    confidence = min(1.0, (food_score * 0.25) + (0.5 if price > 0 else 0) + (0.1 if len(item_text) > 10 else 0))
+                    
+                    # Determine if likely vegetarian
+                    vegetarian_indicators = ['vegetarian', 'vegan', 'salad', 'veggie', 'greens', 'tomato', 'lettuce']
+                    is_vegetarian = any(indicator in item_text.lower() for indicator in vegetarian_indicators)
+                    
+                    items.append({
+                        'name': item_text.title(),
+                        'price': price,
+                        'ingredients': ', '.join(ingredients[:5]),  # Limit to 5 ingredients
+                        'description': '',
+                        'vegetarian': is_vegetarian,
+                        'available': True,
+                        'confidence': confidence
+                    })
+        
+        # Sort by confidence score and return top items
+        items.sort(key=lambda x: x['confidence'], reverse=True)
+        return items[:20]  # Return top 20 most likely menu items
+
+
 class RestaurantManager:
     def __init__(self):
         self.restaurants = st.session_state.restaurants
@@ -109,7 +238,7 @@ class RestaurantManager:
             st.session_state.menus = self.menus
 
     def generate_qr_code(self, restaurant_id: str) -> str:
-        menu_url = f"https://menu.committed.app/menu/{restaurant_id}"
+        menu_url = f"https://www.committeddevents.app/menu/{restaurant_id}"
         qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
         qr.add_data(menu_url)
         qr.make(fit=True)
@@ -242,6 +371,13 @@ def main():
 
             carbon_count = len([r for r in st.session_state.restaurants.values() if r['carbon_calculated']])
             st.metric("Carbon Calculated", carbon_count)
+
+        # OCR Status
+        st.markdown("---")
+        if OCR_AVAILABLE:
+            st.success("📸 OCR: Available")
+        else:
+            st.error("📸 OCR: Unavailable")
 
     # Main content routing
     if page == "🏪 Restaurant Management":
@@ -430,8 +566,11 @@ def menu_builder_tab(restaurant_manager: RestaurantManager):
             # Start with empty categories
             st.session_state[working_categories_key] = {}
 
-    # OCR notice
-    st.info("📸 OCR functionality is disabled on Streamlit Cloud. Use manual menu building below.")
+    # OCR Upload Section
+    if OCR_AVAILABLE:
+        ocr_upload_section(selected_restaurant_id, working_categories_key)
+    else:
+        st.warning("📸 OCR functionality requires additional dependencies. Use manual menu building below.")
 
     # Manual Menu Building
     st.subheader("✏️ Manual Menu Building")
@@ -446,13 +585,152 @@ def menu_builder_tab(restaurant_manager: RestaurantManager):
     save_menu_section(restaurant_manager, selected_restaurant_id, working_categories_key, restaurant)
 
 
+def ocr_upload_section(selected_restaurant_id: str, working_categories_key: str):
+    """Handle OCR menu upload"""
+    st.subheader("📸 Upload Menu Image (OCR)")
+    
+    with st.expander("📤 Upload Menu Photo", expanded=True):
+        st.info("Upload a photo of your paper menu and we'll automatically extract menu items!")
+        
+        uploaded_file = st.file_uploader(
+            "Choose menu image", 
+            type=['png', 'jpg', 'jpeg'],
+            key=f"menu_upload_{selected_restaurant_id}",
+            help="Supported formats: PNG, JPG, JPEG. For best results, ensure the image is clear and well-lit."
+        )
+        
+        if uploaded_file is not None:
+            process_uploaded_menu_image(uploaded_file, selected_restaurant_id, working_categories_key)
+
+
+def process_uploaded_menu_image(uploaded_file, selected_restaurant_id: str, working_categories_key: str):
+    """Process uploaded menu image with OCR"""
+    try:
+        image = Image.open(uploaded_file)
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.image(image, caption="Uploaded Menu", width=300)
+        
+        with col2:
+            if st.button("🔍 Extract Menu Items", key=f"extract_ocr_{selected_restaurant_id}"):
+                with st.spinner("Processing image and extracting text..."):
+                    ocr_processor = MenuOCRProcessor()
+                    
+                    # Extract text from image
+                    extracted_text = ocr_processor.extract_text_from_image(image)
+                    
+                    if extracted_text.strip():
+                        st.success("✅ Text extracted successfully!")
+                        
+                        # Parse menu items
+                        parsed_items = ocr_processor.parse_menu_items(extracted_text)
+                        
+                        if parsed_items:
+                            # Store parsed items in session state
+                            st.session_state[f"parsed_items_{selected_restaurant_id}"] = parsed_items
+                            st.session_state[f"show_ocr_results_{selected_restaurant_id}"] = True
+                            st.rerun()
+                        else:
+                            st.warning("No menu items detected. Try a clearer image or check if the menu contains recognizable food items.")
+                    else:
+                        st.error("❌ Could not extract text from image. Please ensure the image is clear and contains readable text.")
+    
+    except Exception as e:
+        st.error(f"Error processing image: {str(e)}")
+
+
+def display_ocr_results(selected_restaurant_id: str, working_categories_key: str):
+    """Display OCR results for user selection"""
+    if f"parsed_items_{selected_restaurant_id}" not in st.session_state:
+        return
+        
+    parsed_items = st.session_state[f"parsed_items_{selected_restaurant_id}"]
+    
+    st.subheader("📋 Detected Menu Items")
+    st.info("Review and select items to add to your menu. You can edit details after adding them.")
+    
+    # Form to handle OCR item addition
+    with st.form(f"ocr_items_form_{selected_restaurant_id}"):
+        # Default category for OCR items
+        default_category = st.text_input(
+            "Category for these items:", 
+            value="OCR Imported Items",
+            help="All selected items will be added to this category"
+        )
+        
+        selected_items = []
+        
+        # Show detected items with checkboxes
+        for idx, item in enumerate(parsed_items):
+            col_check, col_info = st.columns([1, 4])
+            
+            with col_check:
+                selected = st.checkbox(
+                    "Select", 
+                    key=f"ocr_item_check_{idx}",
+                    value=item['confidence'] > 0.5  # Auto-select high confidence items
+                )
+            
+            with col_info:
+                st.write(f"**{item['name']}**")
+                if item['price'] > 0:
+                    st.write(f"💰 Price: {item['price']:.2f} ₺")
+                if item['ingredients']:
+                    st.write(f"🥘 Detected ingredients: {item['ingredients']}")
+                if item.get('vegetarian'):
+                    st.write("🌱 Likely vegetarian")
+                
+                # Confidence indicator
+                confidence_color = "green" if item['confidence'] > 0.7 else "orange" if item['confidence'] > 0.4 else "red"
+                st.write(f":{confidence_color}[Confidence: {item['confidence']:.0%}]")
+            
+            if selected:
+                selected_items.append(item)
+            
+            st.divider()
+        
+        # Submit button for the form
+        submitted = st.form_submit_button("✅ Add Selected Items to Menu", type="primary")
+        
+        if submitted:
+            if not default_category or not default_category.strip():
+                st.error("❌ Please enter a category name!")
+            elif not selected_items:
+                st.error("❌ Please select at least one item!")
+            else:
+                # Ensure category exists in working categories
+                if default_category not in st.session_state[working_categories_key]:
+                    st.session_state[working_categories_key][default_category] = []
+                
+                added_count = 0
+                for item in selected_items:
+                    # Check if item already exists
+                    existing_items = st.session_state[working_categories_key][default_category]
+                    if not any(existing['name'].lower() == item['name'].lower() for existing in existing_items):
+                        st.session_state[working_categories_key][default_category].append(item)
+                        added_count += 1
+                
+                if added_count > 0:
+                    st.success(f"✅ Added {added_count} items to '{default_category}' category!")
+                    # Clear the OCR results
+                    if f"parsed_items_{selected_restaurant_id}" in st.session_state:
+                        del st.session_state[f"parsed_items_{selected_restaurant_id}"]
+                    if f"show_ocr_results_{selected_restaurant_id}" in st.session_state:
+                        del st.session_state[f"show_ocr_results_{selected_restaurant_id}"]
+                    st.rerun()
+                else:
+                    st.warning("No new items to add (all selected items already exist in the category)")
+
+
 def add_category_section(selected_restaurant_id: str, working_categories_key: str):
     """Add new category section"""
     with st.expander("➕ Add New Category"):
         with st.form(f"add_category_form_{selected_restaurant_id}", clear_on_submit=True):
             new_category_input = st.text_input(
                 "Category Name", 
-                placeholder="e.g., Appetizers, Main Courses, Desserts"
+                placeholder="e.g., Appetizers, Main Courses, Desserts, Drinks"
             )
             
             submitted = st.form_submit_button("Add Category", type="primary")
@@ -474,6 +752,11 @@ def add_category_section(selected_restaurant_id: str, working_categories_key: st
 def edit_categories_section(selected_restaurant_id: str, working_categories_key: str):
     """Edit existing categories and their items"""
     working_categories = st.session_state[working_categories_key]
+    
+    # Show OCR results if available
+    if st.session_state.get(f"show_ocr_results_{selected_restaurant_id}", False):
+        display_ocr_results(selected_restaurant_id, working_categories_key)
+        st.markdown("---")
     
     if not working_categories:
         st.info("No categories yet. Add your first category above!")
@@ -667,6 +950,11 @@ def display_carbon_analysis(restaurant: Dict):
             impact_counts = df['Impact Level'].value_counts()
             st.bar_chart(impact_counts)
 
+            # Top emitters
+            st.subheader("Highest Carbon Footprint Items")
+            top_emitters = df.nlargest(5, 'Carbon Footprint (kg CO₂e)')
+            st.dataframe(top_emitters, use_container_width=True)
+
             # Detailed data table
             st.subheader("Complete Menu Analysis")
             st.dataframe(df.sort_values('Carbon Footprint (kg CO₂e)', ascending=False), use_container_width=True)
@@ -708,7 +996,11 @@ def customer_menu_preview_page():
         
         contact = restaurant.get('contact', {})
         if any(contact.values()):
-            st.write("📞 " + contact.get('phone', '') + " | 📧 " + contact.get('email', ''))
+            contact_info = []
+            if contact.get('phone'): contact_info.append(f"📞 {contact['phone']}")
+            if contact.get('email'): contact_info.append(f"📧 {contact['email']}")
+            if contact.get('address'): contact_info.append(f"📍 {contact['address']}")
+            st.write(" | ".join(contact_info))
 
         if not restaurant['menu_id']:
             st.warning("⚠️ No menu available!")
@@ -735,8 +1027,12 @@ def customer_menu_preview_page():
                         st.write(f"*{item['description']}*")
                     if item.get('ingredients'):
                         st.write(f"🥘 Ingredients: {item['ingredients']}")
+                    
+                    dietary_info = []
                     if item.get('vegetarian'):
-                        st.write("🌱 Vegetarian")
+                        dietary_info.append("🌱 Vegetarian")
+                    if dietary_info:
+                        st.write(" | ".join(dietary_info))
 
                 with col2:
                     st.write(f"**{item['price']:.2f} ₺**")
@@ -765,13 +1061,16 @@ def admin_panel_page():
 
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["🎯 Thresholds", "📊 System Stats"])
+    tab1, tab2, tab3 = st.tabs(["🎯 Thresholds", "📊 System Stats", "🔧 Emission Factors"])
 
     with tab1:
         configure_thresholds_tab()
     
     with tab2:
         system_stats_tab()
+    
+    with tab3:
+        emission_factors_tab()
 
 
 def configure_thresholds_tab():
@@ -848,6 +1147,69 @@ def system_stats_tab():
         if restaurants_data:
             df = pd.DataFrame(restaurants_data)
             st.dataframe(df, use_container_width=True)
+
+
+def emission_factors_tab():
+    """Configure emission factors"""
+    st.subheader("Emission Factors Configuration")
+    
+    st.info("Emission factors are in kg CO₂e per 100g of ingredient")
+    
+    current_factors = st.session_state.admin_config['emission_factors']
+    
+    # Display current factors in editable form
+    col1, col2 = st.columns(2)
+    
+    factors_list = list(current_factors.items())
+    mid_point = len(factors_list) // 2
+    
+    with col1:
+        st.write("**Protein & Dairy:**")
+        for ingredient, factor in factors_list[:mid_point]:
+            new_factor = st.number_input(
+                f"{ingredient.title()}", 
+                value=factor, 
+                min_value=0.0, 
+                step=0.1,
+                key=f"factor_{ingredient}"
+            )
+            if new_factor != factor:
+                st.session_state.admin_config['emission_factors'][ingredient] = new_factor
+    
+    with col2:
+        st.write("**Vegetables & Others:**")
+        for ingredient, factor in factors_list[mid_point:]:
+            new_factor = st.number_input(
+                f"{ingredient.title()}", 
+                value=factor, 
+                min_value=0.0, 
+                step=0.1,
+                key=f"factor_{ingredient}"
+            )
+            if new_factor != factor:
+                st.session_state.admin_config['emission_factors'][ingredient] = new_factor
+    
+    # Add new emission factor
+    st.subheader("Add New Emission Factor")
+    col1, col2, col3 = st.columns([2, 2, 1])
+    
+    with col1:
+        new_ingredient = st.text_input("Ingredient Name")
+    
+    with col2:
+        new_factor = st.number_input("Emission Factor (kg CO₂e/100g)", min_value=0.0, step=0.1)
+    
+    with col3:
+        st.write("")  # Spacing
+        if st.button("Add Factor"):
+            if new_ingredient and new_ingredient.lower() not in current_factors:
+                st.session_state.admin_config['emission_factors'][new_ingredient.lower()] = new_factor
+                st.success(f"Added {new_ingredient}")
+                st.rerun()
+            elif new_ingredient.lower() in current_factors:
+                st.error("Ingredient already exists")
+            else:
+                st.error("Enter ingredient name")
 
 
 if __name__ == "__main__":
