@@ -1,4 +1,6 @@
 streamlit
-   pandas
-   qrcode
-   pillow
+pandas
+qrcode
+pillow
+pytesseract
+opencv-python-headless
