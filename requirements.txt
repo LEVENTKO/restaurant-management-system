@@ -1,0 +1,6 @@
+streamlit==1.28.0
+pandas==2.0.3
+qrcode[pil]==7.4.2
+pillow==10.0.0
+pytesseract==0.3.10
+opencv-python-headless==4.8.0.76

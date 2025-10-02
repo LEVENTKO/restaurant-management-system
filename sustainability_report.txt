@@ -1,0 +1,37 @@
+SUSTAINABILITY REPORT - # Check if file was created
+============================================================
+Generated: 2025-09-28 22:22:29
+
+OVERVIEW:
+- Total Menu Items: 10
+- Eco-Friendly Items: 7 (70.0%)
+- Average Carbon Footprint: 2.65 kg CO2
+
+CARBON DISTRIBUTION:
+- Low Carbon (< 2.0 kg): 7 items
+- Medium Carbon (2.0-4.0 kg): 1 items  
+- High Carbon (> 4.0 kg): 2 items
+
+MOST ECO-FRIENDLY ITEMS:
+• Organic Garden Salad: 0.4 kg CO2
+• Seasonal Fruit Bowl: 0.8 kg CO2
+• Vegetarian Pasta Primavera: 0.89 kg CO2
+
+HIGHEST CARBON ITEMS:
+• Grilled Chicken Caesar Salad: 2.95 kg CO2
+• Classic Beef Burger: 7.62 kg CO2
+• Turkish Lamb Kebab: 8.64 kg CO2
+
+RECOMMENDATIONS:
+- Target: 50%+ eco-friendly items (currently 70.0%)
+- Consider plant-based alternatives for high-carbon items
+- Promote seasonal, local ingredients
+- Use efficient cooking methods
+- Highlight eco-friendly options to customers
+
+NEXT STEPS:
+1. Train staff on sustainability messaging
+2. Print QR codes for table placement  
+3. Monitor customer engagement
+4. Update menu seasonally
+5. Track progress monthly

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title># Check if file was created - Digital Menu</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .stats { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .menu-item.eco { border-left: 4px solid #28a745; background: #f8fff9; }
+        .item-info { flex: 1; }
+        .item-name { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .item-description { color: #666; margin-bottom: 5px; }
+        .carbon-info { font-size: 14px; color: #28a745; }
+        .carbon-high { color: #dc3545; }
+        .item-price { font-weight: bold; font-size: 18px; color: #e74c3c; }
+        .footer { text-align: center; margin-top: 30px; padding: 20px; background: #e8f5e8; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1># Check if file was created</h1>
+            <p>🌱 Sustainable Digital Menu with Carbon Footprint</p>
+        </div>
+        
+        <div class="stats">
+            <strong>Menu Statistics:</strong> 
+            10 items • 7 eco-friendly (70%) • 
+            Average: 2.7 kg CO2
+        </div>
+        
+        <div class="menu-items">
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Organic Garden Salad 🌱</div>
+                    <div class="item-description">Fresh organic greens with olive oil</div>
+                    <div class="carbon-info ">
+                        🌍 0.4 kg CO2 • 
+                        Ingredients: vegetables
+                    </div>
+                </div>
+                <div class="item-price">25.00 ₺</div>
+            </div>
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Seasonal Fruit Bowl 🌱</div>
+                    <div class="item-description">Fresh seasonal fruits</div>
+                    <div class="carbon-info ">
+                        🌍 0.8 kg CO2 • 
+                        Ingredients: vegetables
+                    </div>
+                </div>
+                <div class="item-price">20.00 ₺</div>
+            </div>
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Vegetarian Pasta Primavera 🌱</div>
+                    <div class="item-description">Pasta with fresh seasonal vegetables</div>
+                    <div class="carbon-info ">
+                        🌍 0.89 kg CO2 • 
+                        Ingredients: pasta, vegetables
+                    </div>
+                </div>
+                <div class="item-price">40.00 ₺</div>
+            </div>
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Mediterranean Quinoa Bowl 🌱</div>
+                    <div class="item-description">Fresh quinoa with vegetables and herbs</div>
+                    <div class="carbon-info ">
+                        🌍 0.95 kg CO2 • 
+                        Ingredients: quinoa, vegetables
+                    </div>
+                </div>
+                <div class="item-price">35.00 ₺</div>
+            </div>
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Mushroom Risotto 🌱</div>
+                    <div class="item-description">Creamy risotto with wild mushrooms</div>
+                    <div class="carbon-info ">
+                        🌍 1.07 kg CO2 • 
+                        Ingredients: rice, vegetables
+                    </div>
+                </div>
+                <div class="item-price">50.00 ₺</div>
+            </div>
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Fresh Salmon with Herbs 🌱</div>
+                    <div class="item-description">Grilled salmon with seasonal herbs</div>
+                    <div class="carbon-info ">
+                        🌍 1.3 kg CO2 • 
+                        Ingredients: fish, vegetables
+                    </div>
+                </div>
+                <div class="item-price">75.00 ₺</div>
+            </div>
+            <div class="menu-item eco">
+                <div class="item-info">
+                    <div class="item-name">Fish and Chips 🌱</div>
+                    <div class="item-description">Beer battered fish with potato chips</div>
+                    <div class="carbon-info ">
+                        🌍 1.9 kg CO2 • 
+                        Ingredients: fish, vegetables
+                    </div>
+                </div>
+                <div class="item-price">48.00 ₺</div>
+            </div>
+            <div class="menu-item ">
+                <div class="item-info">
+                    <div class="item-name">Grilled Chicken Caesar Salad </div>
+                    <div class="item-description">Grilled chicken with romaine and parmesan</div>
+                    <div class="carbon-info ">
+                        🌍 2.95 kg CO2 • 
+                        Ingredients: chicken, vegetables
+                    </div>
+                </div>
+                <div class="item-price">45.00 ₺</div>
+            </div>
+            <div class="menu-item ">
+                <div class="item-info">
+                    <div class="item-name">Classic Beef Burger </div>
+                    <div class="item-description">Beef patty with lettuce, tomato, cheese</div>
+                    <div class="carbon-info carbon-high">
+                        🌍 7.62 kg CO2 • 
+                        Ingredients: beef, bread, vegetables
+                    </div>
+                </div>
+                <div class="item-price">55.00 ₺</div>
+            </div>
+            <div class="menu-item ">
+                <div class="item-info">
+                    <div class="item-name">Turkish Lamb Kebab </div>
+                    <div class="item-description">Traditional lamb kebab with rice</div>
+                    <div class="carbon-info carbon-high">
+                        🌍 8.64 kg CO2 • 
+                        Ingredients: lamb, vegetables
+                    </div>
+                </div>
+                <div class="item-price">65.00 ₺</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h3>🌱 Thank you for choosing sustainable dining!</h3>
+            <p>Look for the 🌱 symbol for our most eco-friendly choices (under 2.0 kg CO2)</p>
+            <p>Generated: 2025-09-28 22:22</p>
+        </div>
+    </div>
+</body>
+</html>

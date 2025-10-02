@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+.Python
+bin/
+lib/
+pyvenv.cfg
+share/
+.idea/
+.DS_Store
+*.log
