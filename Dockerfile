@@ -22,7 +22,7 @@ COPY . .
 EXPOSE 8080
 
 # IMPORTANT: Make sure filename matches your actual Python file
-CMD streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true
+CMD streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false
     --server.port=${PORT:-8080} \
     --server.address=0.0.0.0 \
     --server.headless=true \
