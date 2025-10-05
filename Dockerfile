@@ -5,8 +5,10 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-tur \
     libtesseract-dev \
-    libgl1-mesa-glx \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -21,5 +23,5 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Run the application - IMPORTANT: This must be ONE single line
+# Run the application
 CMD streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false
