@@ -18,13 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Expose port (Railway will set this dynamically)
+# Expose port
 EXPOSE 8080
 
-# IMPORTANT: Make sure filename matches your actual Python file
+# Run the application - IMPORTANT: This must be ONE single line
 CMD streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false
-    --server.port=${PORT:-8080} \
-    --server.address=0.0.0.0 \
-    --server.headless=true \
-    --server.enableCORS=false \
-    --server.enableXsrfProtection=false
