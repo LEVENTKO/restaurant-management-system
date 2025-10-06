@@ -1,5 +1,4 @@
 FROM python:3.9-slim
-# Updated version
 
 # Install system dependencies for OCR
 RUN apt-get update && apt-get install -y \
@@ -24,5 +23,5 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false
+# Run the application - using shell form to handle PORT variable
+CMD sh -c "streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false"
