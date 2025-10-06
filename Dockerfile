@@ -1,4 +1,5 @@
 FROM python:3.9-slim
+# Updated version
 
 # Install system dependencies for OCR
 RUN apt-get update && apt-get install -y \
