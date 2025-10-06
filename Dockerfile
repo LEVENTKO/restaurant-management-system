@@ -23,5 +23,5 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Run the application - using shell form to handle PORT variable
-CMD sh -c "streamlit run restaurant_system.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false"
+# Run the application with fixed port
+CMD ["streamlit", "run", "restaurant_system.py", "--server.port=8080", "--server.address=0.0.0.0", "--server.headless=true", "--server.enableCORS=false", "--server.enableXsrfProtection=false"
